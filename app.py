@@ -13,6 +13,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
 import re
+import guricon
 
 from parsing        import extract_text
 from skills         import (

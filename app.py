@@ -13,7 +13,6 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
 import re
-import guricon
 
 from parsing        import extract_text
 from skills         import (
@@ -30,8 +29,7 @@ app = Flask(__name__)
 
 CORS(app, resources={
     r"/*": {
-        ""origins": "*",
-        ],
+        "origins": "*",
         "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ["Content-Type"],
     }

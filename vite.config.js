@@ -3,5 +3,5 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  base: '/smart-career-advisor-v2/',
+  base: '/smart-career-advisor-v3/',
 })

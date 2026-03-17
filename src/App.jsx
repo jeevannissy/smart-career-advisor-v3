@@ -1647,22 +1647,62 @@ function ResumeBuilderPage() {
   const [success, setSuccess] = useState(false);
   const previewRef = useRef(null);
   const set = (k) => (e) => setForm(prev=>({...prev,[k]:e.target.value}));
+
   const generate = () => {
     if (!form.name||!form.email) { alert("Please enter at least your name and email."); return; }
     setPreview({...form}); setSuccess(true);
     setTimeout(()=>{ if(previewRef.current) previewRef.current.scrollIntoView({behavior:"smooth"}); },100);
   };
+
   const downloadPDF = () => {
     if (!preview) { alert("Please generate the resume first."); return; }
-    if (window.html2pdf) {
-      window.html2pdf().set({ margin:.5, filename:"SmartEduCare_Resume.pdf",
-        image:{type:"jpeg",quality:.98}, html2canvas:{scale:2,useCORS:true},
-        jsPDF:{unit:"in",format:"letter",orientation:"portrait"} })
-        .from(document.getElementById("resume-preview-content")).save();
-    } else { window.print(); }
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>SmartEduCare_Resume</title>
+        <style>
+          * { margin:0; padding:0; box-sizing:border-box; }
+          body { font-family: Arial, sans-serif; background:#fff; color:#1a1a2e; }
+          .header { background: linear-gradient(135deg,#0C2D48 0%,#0369A1 100%); padding:2rem 2.5rem; }
+          .name { font-size:2rem; font-weight:900; letter-spacing:3px; color:#fff; margin-bottom:.2rem; }
+          .headline { font-size:.8rem; color:rgba(125,211,252,0.95); font-weight:700; letter-spacing:2px; text-transform:uppercase; }
+          .contact { display:flex; gap:1.5rem; flex-wrap:wrap; padding:1rem 2.5rem; background:#f0f9ff; border-bottom:2px solid #bae6fd; }
+          .contact span { font-size:.78rem; color:#64748b; font-weight:600; }
+          .body { padding:1.5rem 2.5rem; }
+          .section { margin-bottom:1.3rem; }
+          .sec-title { font-size:.62rem; font-weight:800; letter-spacing:3.5px; text-transform:uppercase; color:#0284C7; padding-bottom:.4rem; border-bottom:2px solid #e0f2fe; margin-bottom:.65rem; }
+          .sec-text { font-size:.85rem; color:#334155; line-height:1.7; white-space:pre-line; }
+          .skills-row { display:flex; flex-wrap:wrap; gap:.35rem; }
+          .skill-badge { padding:.28rem .75rem; border-radius:8px; font-size:.72rem; font-weight:800; background:rgba(14,165,233,0.1); color:#0284C7; border:1px solid rgba(14,165,233,.22); text-transform:uppercase; }
+          @media print { body { -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="name">${preview.name}</div>
+          ${preview.email ? `<div class="headline">${preview.email}</div>` : ''}
+        </div>
+        <div class="contact">
+          ${preview.email ? `<span>📧 ${preview.email}</span>` : ''}
+          ${preview.phone ? `<span>📞 ${preview.phone}</span>` : ''}
+          ${preview.linkedin ? `<span>🔗 ${preview.linkedin}</span>` : ''}
+        </div>
+        <div class="body">
+          ${preview.skills ? `<div class="section"><div class="sec-title">Skills</div><div class="skills-row">${preview.skills.split(",").map(s=>`<span class="skill-badge">${s.trim()}</span>`).join('')}</div></div>` : ''}
+          ${preview.education ? `<div class="section"><div class="sec-title">Education</div><p class="sec-text">${preview.education}</p></div>` : ''}
+          ${preview.experience ? `<div class="section"><div class="sec-title">Experience</div><p class="sec-text">${preview.experience}</p></div>` : ''}
+          ${preview.projects ? `<div class="section"><div class="sec-title">Projects</div><p class="sec-text">${preview.projects}</p></div>` : ''}
+        </div>
+        <script>window.onload = function(){ window.print(); }<\/script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
+
   const reset = () => { setForm({name:"",email:"",phone:"",linkedin:"",skills:"",education:"",experience:"",projects:""}); setPreview(null); setSuccess(false); };
-  useEffect(()=>{ const s=document.createElement("script"); s.src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"; document.head.appendChild(s); },[]);
 
   return (
     <div className="page-wrap page-enter">

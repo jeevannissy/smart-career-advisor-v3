@@ -1230,25 +1230,44 @@ function CareerPage() {
   const curStep = step==="loading"?2:step;
 
   const analyze = async () => {
-    if (!jobFile) { alert("Please upload a job description."); return; }
-    setStep("loading");
-    try {
-      const ctrl = new AbortController();
-      const tid = setTimeout(() => ctrl.abort(), 8000);
-      const fd = new FormData();
-      fd.append("resume", resumeFile); fd.append("job", jobFile);
-      const resp = await fetch("http://127.0.0.1:5000/analyze", { method:"POST", body:fd, signal:ctrl.signal });
-      clearTimeout(tid);
-      if (!resp.ok) throw new Error("HTTP "+resp.status);
-      const data = await resp.json();
-      if (!data.success) throw new Error(data.error);
-      setResults({ score:data.score+"%", radarData:buildRadar(data.resume_skills,data.job_skills), suggestions:data.suggestions });
-      setStep(3);
-    } catch(e) {
-      setResults({ score:"72%", radarData:buildRadar(DEMO_SKILLS.resume_skills,DEMO_SKILLS.job_skills), suggestions:DEMO_SUGGESTIONS, demo:true });
-      setStep(3);
-    }
-  };
+  if (!jobFile) { alert("Please upload a job description."); return; }
+  setStep("loading");
+  try {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 60000); // Increased timeout
+    const fd = new FormData();
+    fd.append("resume", resumeFile); 
+    fd.append("job", jobFile);
+    
+    // ✅ CHANGED: Point to your Render deployment
+    const resp = await fetch("https://smart-career-advisor-v3.onrender.com/analyze", { 
+      method:"POST", 
+      body:fd, 
+      signal:ctrl.signal 
+    });
+    
+    clearTimeout(tid);
+    if (!resp.ok) throw new Error("HTTP "+resp.status);
+    const data = await resp.json();
+    if (!data.success) throw new Error(data.error);
+    setResults({ 
+      score:data.score+"%", 
+      radarData:buildRadar(data.resume_skills,data.job_skills), 
+      suggestions:data.suggestions 
+    });
+    setStep(3);
+  } catch(e) {
+    console.error("Analysis error:", e);
+    // Fallback to demo data if backend fails
+    setResults({ 
+      score:"72%", 
+      radarData:buildRadar(DEMO_SKILLS.resume_skills,DEMO_SKILLS.job_skills), 
+      suggestions:DEMO_SUGGESTIONS, 
+      demo:true 
+    });
+    setStep(3);
+  }
+};
 
   const buildRadar = (rs,js) => {
     const all=[...new Set([...rs,...js])];

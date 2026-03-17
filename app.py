@@ -31,7 +31,10 @@ CORS(app, resources={
     r"/*": {
         "origins": "*",
         "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type"],
+        "allow_headers": ["Content-Type", "Authorization"],  # Added Authorization
+        "expose_headers": ["Content-Type"],
+        "supports_credentials": False,
+        "max_age": 3600
     }
 })
 
@@ -224,3 +227,8 @@ def home():
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000, host="0.0.0.0")
+    
+    @app.before_request
+def wake_up():
+    """Helps with Render's cold start"""
+    pass

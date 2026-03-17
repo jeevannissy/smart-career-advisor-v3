@@ -12,10 +12,9 @@ Endpoints:
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
-import re
 
-from parsing        import extract_text
-from skills         import (
+from parsing import extract_text
+from skills import (
     extract_skills,
     SKILL_TO_ROLES,
     LEARNING_PATHS,
@@ -27,11 +26,12 @@ from fit_classifier import AdvancedFitClassifier
 
 app = Flask(__name__)
 
+# CORS configuration - allows requests from any origin
 CORS(app, resources={
     r"/*": {
         "origins": "*",
         "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"],  # Added Authorization
+        "allow_headers": ["Content-Type", "Authorization"],
         "expose_headers": ["Content-Type"],
         "supports_credentials": False,
         "max_age": 3600
@@ -43,6 +43,7 @@ classifier = AdvancedFitClassifier()
 
 
 def predict_roles(resume_skills):
+    """Predict suitable career roles based on resume skills."""
     role_scores = {}
     for skill in resume_skills:
         if skill in SKILL_TO_ROLES:
@@ -54,6 +55,7 @@ def predict_roles(resume_skills):
 
 
 def generate_suggestions(resume_skills, job_skills, resume_text="", job_text=""):
+    """Generate personalized career suggestions based on skill gap analysis."""
     missing_skills = [s for s in job_skills if s not in resume_skills]
 
     # 1. Skill gap analysis
@@ -133,19 +135,20 @@ def generate_suggestions(resume_skills, job_skills, resume_text="", job_text="")
     growth_tips = growth_tips[:5]
 
     return {
-        "skill_gap_analysis":   gap_analysis[:6],
+        "skill_gap_analysis": gap_analysis[:6],
         "recommended_learning": unique_learning[:6],
-        "suggested_projects":   unique_projects[:5],
-        "career_roles":         career_roles[:5],
-        "career_growth_tips":   growth_tips[:5],
+        "suggested_projects": unique_projects[:5],
+        "career_roles": career_roles[:5],
+        "career_growth_tips": growth_tips[:5],
     }
 
 
 @app.route("/analyze", methods=["POST"])
 def analyze():
+    """Analyze resume against job description and return match score with suggestions."""
     try:
         resume_file = request.files.get("resume")
-        job_file    = request.files.get("job")
+        job_file = request.files.get("job")
 
         if not resume_file or not job_file:
             return jsonify({
@@ -173,7 +176,7 @@ def analyze():
             return jsonify({"success": False, "error": "Job description: " + str(e)}), 422
 
         resume_skills = extract_skills(resume_text)
-        job_skills    = extract_skills(job_text)
+        job_skills = extract_skills(job_text)
 
         skill_weights = {s: get_skill_weight(s) for s in job_skills}
         detail = classifier.get_detailed_scores(
@@ -189,14 +192,14 @@ def analyze():
         )
 
         return jsonify({
-            "success":       True,
-            "score":         score,
+            "success": True,
+            "score": score,
             "resume_skills": resume_skills,
-            "job_skills":    job_skills,
+            "job_skills": job_skills,
             "score_detail": {
-                "skill_overlap_pct":   detail["skill_overlap_pct"],
+                "skill_overlap_pct": detail["skill_overlap_pct"],
                 "text_similarity_pct": detail["text_similarity_pct"],
-                "content_bonus_pct":   detail["content_bonus_pct"],
+                "content_bonus_pct": detail["content_bonus_pct"],
             },
             "suggestions": suggestions,
         })
@@ -211,24 +214,24 @@ def analyze():
 
 @app.route("/health", methods=["GET"])
 def health():
+    """Health check endpoint."""
     return jsonify({"status": "ok", "service": "SmartEduCare API"})
 
 
 @app.route("/", methods=["GET"])
 def home():
+    """Welcome message with available endpoints."""
     return jsonify({
         "message": "SmartEduCare Career Advisor API is running.",
         "endpoints": {
             "POST /analyze": "Analyze resume vs job description",
-            "GET  /health":  "Health check",
+            "GET  /health": "Health check",
         }
     })
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000, host="0.0.0.0")
-    
-    @app.before_request
-def wake_up():
-    """Helps with Render's cold start"""
-    pass
+    # For local development only
+    # Render will use gunicorn to run the app
+    port = int(os.environ.get("PORT", 5000))
+    app.run(debug=False, host="0.0.0.0", port=port)
